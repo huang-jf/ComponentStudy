@@ -1,0 +1,17 @@
+apply plugin: 'java-library'
+
+dependencies {
+    implementation 'com.google.auto.service:auto-service:1.0-rc2'
+    // 代码生成器
+    implementation 'com.squareup:javapoet:1.9.0'
+//    api project(':router-api-annotation')
+    api project('::out-lib:router-api-annotation')
+}
+
+//  解决build警告：编码GBK的不可映射字符
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+sourceCompatibility = rootProject.sourceCompatibility
+targetCompatibility = rootProject.targetCompatibility

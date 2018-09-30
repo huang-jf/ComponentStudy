@@ -1,0 +1,9 @@
+include ':app', ':module_core', ':lib_core', ':module_test'
+
+
+// 导入外部依赖：router
+include ':out-lib'
+project (':out-lib').projectDir = new File('../component-plugin')
+include ':out-lib:router-api'
+include ':out-lib:router-api-annotation'
+include ':out-lib:router-compiler'

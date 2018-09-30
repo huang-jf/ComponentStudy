@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.hjf.module.test">
+
+    <application>
+        <activity android:name=".ModuleTestMainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="module"
+                    android:path="/a1"
+                    android:scheme="app" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
