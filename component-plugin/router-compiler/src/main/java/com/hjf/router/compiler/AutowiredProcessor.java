@@ -70,7 +70,7 @@ public class AutowiredProcessor extends AbstractProcessor {
         types = processingEnv.getTypeUtils();            // Get type utils.
         elements = processingEnv.getElementUtils();      // Get class meta.
 
-        logger = new Logger(processingEnv.getMessager());   // Package the log utils.
+        logger = new Logger("AutowiredProcessor", processingEnv.getMessager());   // Package the log utils.
 
         logger.info(">>> AutowiredProcessor init. <<<");
     }
@@ -92,7 +92,7 @@ public class AutowiredProcessor extends AbstractProcessor {
     }
 
     private void generateHelper() throws IOException, IllegalAccessException {
-        TypeElement type_ISyringe = elements.getTypeElement(Constants.ISYRINGE);
+        TypeElement type_ISyringe = elements.getTypeElement(Constants.ROUTE_SYRINGE);
 
 
         TypeMirror activityTm = elements.getTypeElement(Constants.ACTIVITY).asType();
@@ -129,7 +129,7 @@ public class AutowiredProcessor extends AbstractProcessor {
                 String qualifiedName = parent.getQualifiedName().toString();
                 String packageName = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
 
-                String fileName = RouterJavaFilePathUtil.getAutowiredJavaFilePath( parent.getSimpleName().toString());
+                String fileName = RouterJavaFilePathUtil.getAutowiredJavaFilePath(parent.getSimpleName().toString());
 
                 logger.info(">>> Start process " + children.size() + " field in " + parent.getSimpleName() + " ... <<<");
 
@@ -175,12 +175,6 @@ public class AutowiredProcessor extends AbstractProcessor {
                         injectMethodBuilder.addStatement(
                                 "$T.e(\"" + TAG + "\", \"The field '" + fieldName + "' is null," + "field description is:" + autowired.desc() +
                                         ",in class '\" + $T.class.getName() + \"!\")", AndroidLog, ClassName.get(parent));
-
-                        if (autowired.throwOnNull()) {
-                            injectMethodBuilder.addStatement("throw new $T(" +
-                                    "\"The field '" + fieldName + "' is null," + "field description is:" + autowired.desc() +
-                                    ",in class '\" + $T.class.getName() + \"!\")", NullPointerException, ClassName.get(parent));
-                        }
 
                         injectMethodBuilder.endControlFlow();
                     }
@@ -261,8 +255,7 @@ public class AutowiredProcessor extends AbstractProcessor {
         // parcelable
         else if ("android.os.Parcelable".equals(paramTypeDef)) {
             return (isActivity ? ("getParcelableExtra($S)") : ("getParcelable($S)"));
-        }
-        else {
+        } else {
 
         }
         // Unknown

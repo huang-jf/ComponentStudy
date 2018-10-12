@@ -10,8 +10,6 @@ import android.text.TextUtils;
  */
 public class Router {
 
-    private DNSServer dnsServer = new DNSServer();
-
     private Router() {
     }
 
@@ -28,14 +26,6 @@ public class Router {
         return SingletonHolder.INSTANCE;
     }
 
-    public void addModuleClient(String host) {
-        dnsServer.addModuleClient(host);
-    }
-
-    public void removeModuleClient(String host) {
-        dnsServer.removeModuleClient(host);
-    }
-
 
     public Navigator build(String url) {
         return build(url, null);
@@ -50,11 +40,11 @@ public class Router {
             }
             Uri uri = Uri.parse(url);
             if (uri != null) {
-                ModuleClient client = Router.getInstance().dnsServer.getModuleClient(uri.getHost());
-                String path = "/" + TextUtils.join("/", uri.getPathSegments());
-                if (client != null && client.hasClientService(path)) {
-                    return new Navigator(uri.getPath(), client, bundle);
-                }
+//                ModuleClient client = Router.getInstance().dnsServer.getModuleClient(uri.getHost());
+//                String path = "/" + TextUtils.join("/", uri.getPathSegments());
+//                if (client != null && client.hasClientService(path)) {
+//                    return new Navigator(uri.getPath(), client, bundle);
+//                }
             }
         }
         return null;

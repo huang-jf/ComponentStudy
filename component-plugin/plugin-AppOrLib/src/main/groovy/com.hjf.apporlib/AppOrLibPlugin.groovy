@@ -11,12 +11,10 @@ class AppOrLibPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
 
-
         // 1. 获取当前编译module
         String currCompileModuleName = project.getPath().replace(":", "")
         System.out.println("1. currCompileModuleName ->  " + currCompileModuleName)
         System.out.println("1. project.getPath() ->  " + project.getPath())
-
 
         // 2. 从工程根目录的 gradle.properties 文件中获取字段 main_module_name
         if (!project.rootProject.hasProperty("main_module_name")) {
@@ -25,13 +23,14 @@ class AppOrLibPlugin implements Plugin<Project> {
         String mainModuleName = project.rootProject.property("main_module_name")
         System.out.println("2. mainModuleName ->  " + mainModuleName)
 
-
         // 3. 获取编译的 TargetCompileModuleName
-        // 如果为 null，默认使用 application 插件
+        // 如果是命令行使用 ./gradlew compileDebug 等进行编译，TargetCompileModuleName = null
         String targetCompileModuleName = getTargetCompileModuleName(project)
-        System.out.println("3. targetCompileModuleName ->  " + targetCompileModuleName
-                + (targetCompileModuleName == null ? " 不是compile行为，使用本插件在开发时，一律当作application处理" : ""))
-
+        if (targetCompileModuleName == null) {
+            System.out.println("3. 检测 targetCompileModuleName = null, 默认为 application")
+//            targetCompileModuleName = mainModuleName
+        }
+        System.out.println("3. targetCompileModuleName ->  " + targetCompileModuleName)
 
         // 4. 判断当前module应用插件：application、library
         boolean isApplyPluginApplication = true
@@ -41,7 +40,6 @@ class AppOrLibPlugin implements Plugin<Project> {
             isApplyPluginApplication = false
         }
         System.out.println("4. isApplyPluginApplication ->  " + isApplyPluginApplication)
-
 
         // 5.1 application
         // 根据配置添加各种组件依赖，并且自动化生成组件加载代码

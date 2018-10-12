@@ -20,12 +20,10 @@ import java.util.ArrayList;
 public final class Navigator {
 
     private String uriPath;
-    private ModuleClient client;
     private Bundle mBundle;
 
-    public Navigator(String uriPath, ModuleClient client, Bundle bundle) {
+    public Navigator(String uriPath, Bundle bundle) {
         this.uriPath = uriPath;
-        this.client = client;
         this.mBundle = (null == bundle ? new Bundle() : bundle);
     }
 
@@ -35,18 +33,18 @@ public final class Navigator {
     private int exitAnim = -1;
 
     public Object navigation(Context context) {
-        Class target = client.getClientService(uriPath);
-        Intent intent = new Intent(context, target);
-        intent.putExtras(mBundle);
-        context.startActivity(intent);
+//        Class target = client.getClientService(uriPath);
+//        Intent intent = new Intent(context, target);
+//        intent.putExtras(mBundle);
+//        context.startActivity(intent);
         return true;
     }
 
     public Object navigation(Activity context, int requestCode) {
-        Class target = client.getClientService(uriPath);
-        Intent intent = new Intent(context, target);
-        intent.putExtras(mBundle);
-        context.startActivityForResult(intent, requestCode);
+//        Class target = client.getClientService(uriPath);
+//        Intent intent = new Intent(context, target);
+//        intent.putExtras(mBundle);
+//        context.startActivityForResult(intent, requestCode);
         return true;
     }
 
