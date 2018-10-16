@@ -5,15 +5,19 @@ import com.android.build.gradle.internal.pipeline.TransformManager
 import javassist.*
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.io.FileUtils
-import org.github.msg.MsgBridgeService
-import org.github.msg.ServiceInfoBean
 import org.gradle.api.Project
 
 class RouterInitTransform extends Transform {
 
+    /**
+     * 用于判断当前 class 是否是 Application
+     * 如果是： 需要插入代码
+     */
+    private static final String APPLICATION_NAME = "com.hjf.component.sample.MyApp"
+    private static final String ROUTE_ROOT_NAME = "com.hjf.router.facade.template.IRouteRoot"
+
     private Project project
-    ClassPool classPool
-    String applicationName
+//    String applicationName
 
     RouterInitTransform(Project project) {
         this.project = project
@@ -22,53 +26,53 @@ class RouterInitTransform extends Transform {
     @Override
     void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
 
-        System.out.println("进入任务")
-        getRealApplicationName(transformInvocation.getInputs())
-        classPool = new ClassPool()
+        System.out.println("router init transform start")
+
+        // 1. 获取应用程序的 Application Name TODO
+//        applicationName = project.extensions.combuild.applicationName
+//        if (applicationName == null || applicationName.isEmpty()) {
+//            throw new RuntimeException("you should set applicationName in combuild")
+//        }
+//        System.out.println("1. applicationName ->  " + applicationName)
+
+        // 1. 获取默认搜索路径类池
+        System.out.println("1. 获取默认搜索路径类池 ")
+        ClassPool classPool = ClassPool.getDefault()
+
+        System.out.println("2. 加载 class 文件到 box 容器中 ")
         project.android.bootClasspath.each {
             // it：gradle中表示闭包的参数，类似this
             classPool.appendClassPath((String) it.absolutePath)
         }
         def box = ClassUtils.toCtClasses(transformInvocation.getInputs(), classPool)
 
-        //要收集的application，一般情况下只有一个
-        List<CtClass> applications = new ArrayList<>()
-        //要收集的applicationlikes，一般情况下有几个组件就有几个applicationlike
-        List<CtClass> activators = new ArrayList<>()
-
-        List<ServiceInfoBean> serviceInfoBeans = []
-
+        System.out.println("start find Target Application and All RouteRootImplClass.")
+        CtClass ctClassApplication = null
+        List<CtClass> routeRootList = new ArrayList<>()
         for (CtClass ctClass : box) {
-            if (isMsgBridgeService(ctClass)) {
-                MsgBridgeService annotation = ctClass.getAnnotation(MsgBridgeService.class)
-                ServiceInfoBean bean = new ServiceInfoBean(annotation.workProcessName(), ctClass)
-                serviceInfoBeans.add(bean)
-            }
-
-            if (isApplication(ctClass)) {
-                applications.add(ctClass)
+            // 找到指定的 Application
+            if (APPLICATION_NAME.equals(ctClass.getName())) {
+                System.out.println("is application " + ctClass.getName())
+                ctClassApplication = ctClass
                 continue
             }
-            if (isActivator(ctClass)) {
-                activators.add(ctClass)
+            // 找到所有的 RouteRoot 实现类
+            if (isRouteRoot(ctClass)) {
+                System.out.println("Add RouterRoot  Class -- " + ctClass.getName())
+                routeRootList.add(ctClass)
             }
-
         }
-        for (CtClass ctClass : applications) {
-            System.out.println("Application is   " + ctClass.getName())
+        // 没有找到 Exception
+        if (ctClassApplication == null) {
+            System.out.println("Application class not found exception. class name -- " + APPLICATION_NAME)
+            return
         }
-        for (CtClass ctClass : activators) {
-            System.out.println("UsherEvent will be auto register: " + ctClass.getName())
-        }
-
-        serviceInfoBeans?.forEach({
-            System.out.println("find MessageBridgeService: " + it.toString())
-        })
 
         transformInvocation.inputs.each { TransformInput input ->
+
             //对类型为jar文件的input进行遍历
             input.jarInputs.each { JarInput jarInput ->
-                //jar文件一般是第三方依赖库jar文件
+                // jar文件一般是第三方依赖库jar文件
                 // 重命名输出文件（同目录copyFile会冲突）
                 def jarName = jarInput.name
                 def md5Name = DigestUtils.md5Hex(jarInput.file.getAbsolutePath())
@@ -82,43 +86,29 @@ class RouterInitTransform extends Transform {
                 FileUtils.copyFile(jarInput.file, dest)
             }
 
-            //对类型为“文件夹”的input进行遍历
+            // 对类型为 “文件夹” 的input进行遍历, 开始自动注入
             input.directoryInputs.each { DirectoryInput directoryInput ->
-                boolean isRegisterCompoAuto = project.extensions.combuild.isRegisterCompoAuto
+                System.out.println("start register dir path : " + directoryInput.file.getPath())
 
-                System.out.println(">>>")
-                System.out.println(">>>")
-                System.out.println(">>>")
-                System.out.println(">>>")
-
-                System.out.println("check isRegisterCompoAuto:  "
-                        + directoryInput.file.getPath()
-                        + " ; isRegisterCompoAuto:"
-                        + isRegisterCompoAuto)
-
-//                if (isRegisterCompoAuto) {
                 String fileName = directoryInput.file.absolutePath
                 File dir = new File(fileName)
                 dir.eachFileRecurse { File file ->
                     String filePath = file.absolutePath
+                    // 获取 class
                     String classNameTemp = filePath.replace(fileName, "")
                             .replace("\\", ".")
                             .replace("/", ".")
                     if (classNameTemp.endsWith(".class")) {
+                        // 解析出 class name
                         String className = classNameTemp.substring(1, classNameTemp.length() - 6)
-                        if (className.equals(applicationName)) {
-
-                            injectEventManagerInitializeCode(applications[0], serviceInfoBeans, fileName)
-
-                            //auto register component
-                            if (isRegisterCompoAuto)
-                                injectApplicationCode(applications.get(0), activators, fileName)
-
-                            applications[0].detach()
+                        // 是指定的 Application 则插入代码
+                        if (APPLICATION_NAME.equals(className)) {
+                            System.out.println("update application class name is  : " + className)
+                            insertInitializeCode2Application(ctClassApplication, routeRootList, classPool, fileName)
+                            ctClassApplication.detach()
                         }
                     }
                 }
-//                }
 
                 def dest = transformInvocation.outputProvider.getContentLocation(directoryInput.name,
                         directoryInput.contentTypes,
@@ -129,127 +119,68 @@ class RouterInitTransform extends Transform {
         }
     }
 
-
-    private void getRealApplicationName(Collection<TransformInput> inputs) {
-        applicationName = project.extensions.combuild.applicationName
-        if (applicationName == null || applicationName.isEmpty()) {
-            throw new RuntimeException("you should set applicationName in combuild")
-        }
-    }
-
     private
-    static void injectEventManagerInitializeCode(CtClass ctClassApplication, List<CtClass> serviceInfoBeans, String patch) {
-        System.out.println("injectEventManagerInitializeCode begin")
+    static void insertInitializeCode2Application(CtClass ctClassApplication, List<CtClass> routeRootList, ClassPool classPool, String patch) {
+        System.out.println("insert initialize code to application begin --> " + ctClassApplication.getName())
         ctClassApplication.defrost()
-        try {
-            CtMethod attachBaseContextMethod = ctClassApplication.getDeclaredMethod("onCreate", null)
-            attachBaseContextMethod.insertBefore(generateEventManagerInitializeCode(serviceInfoBeans))
-        } catch (CannotCompileException | NotFoundException e) {
 
-            System.out.println("could not found onCreate in Application;   " + e.toString())
+        try {
+            // 获取 void onCreate() 方法
+//            CtClass[] paramTypes = new CtClass[1]
+//            paramTypes[0] = classPool.get(Void.class.getName())
+            CtMethod methodOnCreate = ctClassApplication.getDeclaredMethod("onCreate", null)
+            System.out.println("found onCreate() in Application, start insert initialize code ... ")
+            // 开始插入代码
+            methodOnCreate.insertBefore(generateInitializeCode4RouteRoots(routeRootList))
+        }
+        // 没有找到方法，自己创建
+        catch (MissingMethodException | NotFoundException e) {
+            System.out.println("could not found onCreate() in Application;   " + e.toString())
+            System.out.println("try create method onCreate() in Target Application - " + ctClassApplication.getName())
 
             StringBuilder methodBody = new StringBuilder()
             methodBody.append("protected void onCreate() {")
             methodBody.append("super.onCreate();")
             // 循环添加Usher.input()代码
-            methodBody.append(generateEventManagerInitializeCode(serviceInfoBeans))
+            methodBody.append(generateInitializeCode4RouteRoots(routeRootList))
             methodBody.append("}")
             ctClassApplication.addMethod(CtMethod.make(methodBody.toString(), ctClassApplication))
-        } catch (Exception e) {
-            System.out.println("could not create onCreate() in Application;   " + e.toString())
+        }
+        // 创建 onCreate 方法失败
+        catch (Exception e) {
+            System.out.println("Create method:onCreate failed in Application;   \n" + e.toString())
+            return
         }
         ctClassApplication.writeFile(patch)
-//        ctClassApplication.detach()
-
-        System.out.println("injectEventManagerInitializeCode success ")
-
+        System.out.println("insert initialize code 2 application success")
     }
 
-
-    private void injectApplicationCode(CtClass ctClassApplication, List<ServiceInfoBean> activators, String patch) {
-        System.out.println("injectApplicationCode begin")
-        ctClassApplication.defrost()
-        try {
-            CtMethod attachBaseContextMethod = ctClassApplication.getDeclaredMethod("onCreate", null)
-            attachBaseContextMethod.insertAfter(getAutoLoadComCode(activators))
-        } catch (CannotCompileException | NotFoundException e) {
-
-            System.out.println("could not found onCreate in Application;   " + e.toString())
-
-            StringBuilder methodBody = new StringBuilder()
-            methodBody.append("protected void onCreate() {")
-            methodBody.append("super.onCreate();")
-            methodBody.append(getAutoLoadComCode(activators))
-            methodBody.append("}")
-            ctClassApplication.addMethod(CtMethod.make(methodBody.toString(), ctClassApplication))
-        } catch (Exception e) {
-            System.out.println("could not create onCreate() in Application;   " + e.toString())
-        }
-        ctClassApplication.writeFile(patch)
-//        ctClassApplication.detach()
-
-        System.out.println("injectApplicationCode success ")
-    }
-
-    static String generateEventManagerInitializeCode(List<ServiceInfoBean> serviceInfoBeans) {
+    private static String generateInitializeCode4RouteRoots(List<CtClass> routeRootList) {
         StringBuilder initializeCodeBuilder = new StringBuilder()
-        serviceInfoBeans?.forEach({
-            //   EventManager.appendMapper("pname", XXX.class);
-
-            initializeCodeBuilder.append("org.github.jimu.msg.EventManager.appendMapper(\"")
-                    .append(it.fullProcessName)
-                    .append("\",")
-                    .append(it.serviceClass.getName())
-                    .append(".class);")
+        routeRootList?.forEach({
+            initializeCodeBuilder
+                    .append("new ")
+                    .append(it.getName())
+                    .append("().loadInto(com.hjf.router.Warehouse.groupsIndex);")
         })
+        System.out.println(" initialize code : \n " + initializeCodeBuilder.toString())
         return initializeCodeBuilder.toString()
     }
 
-    private static String getAutoLoadComCode(List<CtClass> activators) {
-        StringBuilder autoLoadComCode = new StringBuilder()
-        for (CtClass ctClass : activators) {
-            autoLoadComCode.append("new " + ctClass.getName() + "()" + ".onCreate();")
-        }
-
-        return autoLoadComCode.toString()
-    }
-
-
-    private boolean isApplication(CtClass ctClass) {
-        try {
-            if (applicationName != null && applicationName == ctClass.getName()) {
+    /**
+     * 是否是 IRouteRoot 实现类
+     *
+     * 每个采用 APT： Route-Api-Compiler 的模块都会生成一个IRouteRoot的实现类，用来生成存放IRouteGroup、IProvider的生成类
+     *
+     * @return true
+     */
+    private boolean isRouteRoot(CtClass ctClass) {
+        for (CtClass ctClassInter : ctClass.getInterfaces()) {
+            if (ROUTE_ROOT_NAME.equals(ctClassInter.name)) {
                 return true
             }
-        } catch (Exception e) {
-            println "class not found exception class name:  " + ctClass.getName()
         }
         return false
-    }
-
-    /**
-     * check if the class is implement of IApplication and isRegisterCompoAuto
-     * @param ctClass target class to be checked
-     * @return true if impl& isRegisterCompoAuto
-     */
-    private static boolean isActivator(CtClass ctClass) {
-        try {
-            for (CtClass ctClassInter : ctClass.getInterfaces()) {
-                if ("com.hjf.usherlib.UsherEvent".equals(ctClassInter.name)) {
-//                    boolean hasManualNotation = ctClass.hasAnnotation(Class.forName("com.hjf.usherlib.annotation.Ushering"))
-                    return true
-//                    System.out.println(">>>> " + ctClass + " manual register?" + hasManualNotation)
-//                    return !hasManualNotation
-                }
-            }
-        } catch (Exception e) {
-            println "isActivator got exception :" + ctClass.getName() + "   ;  " + e.toString()
-        }
-
-        return false
-    }
-
-    private static boolean isMsgBridgeService(CtClass ctClass) {
-        return ctClass.hasAnnotation(MsgBridgeService.class)
     }
 
     @Override

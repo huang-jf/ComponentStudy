@@ -10,13 +10,13 @@ import java.util.Map;
 public class Warehouse {
 
     // Cache route:
-    static Map<String, Class<? extends IRouteGroup>> groupsIndex = new HashMap<>();
+    public static Map<String, Class<? extends IRouteGroup>> groupsIndex = new HashMap<>();
     // Cache route and metas
-    static Map<String, RouteMeta> routes = new HashMap<>();
+    public static Map<String, RouteMeta> routes = new HashMap<>();
 
     // Cache provider
     static Map<Class, IProvider> providers = new HashMap<>();
-    static Map<String, RouteMeta> providersIndex = new HashMap<>();
+    public static Map<String, RouteMeta> providersIndex = new HashMap<>();
 
 
     static void clear() {

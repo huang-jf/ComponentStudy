@@ -12,9 +12,8 @@ class RouterPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        System.out.println("Router Init Task Start. ")
+        System.out.println("Router Plugin Start Transform --> init transform.")
         project.android.registerTransform(new RouterInitTransform(project))
-        System.out.println("Router Init Task End. ")
     }
 
 }

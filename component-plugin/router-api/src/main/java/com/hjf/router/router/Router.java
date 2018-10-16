@@ -6,16 +6,12 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 /**
- * 存放所有的 DNS server 并自动分配 open uri 任务给能相关的 dns server
+ * 为了进一步了解ARouter源码
+ * 仿造ARouter试验性质的实现
  */
 public class Router {
 
     private Router() {
-    }
-
-    // TODO
-    public static void init(Context context){
-
     }
 
     private final static class SingletonHolder {
@@ -40,11 +36,8 @@ public class Router {
             }
             Uri uri = Uri.parse(url);
             if (uri != null) {
-//                ModuleClient client = Router.getInstance().dnsServer.getModuleClient(uri.getHost());
-//                String path = "/" + TextUtils.join("/", uri.getPathSegments());
-//                if (client != null && client.hasClientService(path)) {
-//                    return new Navigator(uri.getPath(), client, bundle);
-//                }
+                String path = "/" + TextUtils.join("/", uri.getPathSegments());
+                return new Navigator(uri.getPath(), bundle);
             }
         }
         return null;

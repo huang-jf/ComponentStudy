@@ -3,12 +3,17 @@ package com.hjf.router.router;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.util.SparseArray;
+
+import com.hjf.router.Warehouse;
+import com.hjf.router.facade.enums.RouteType;
+import com.hjf.router.facade.model.RouteMeta;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -32,20 +37,43 @@ public final class Navigator {
     private int enterAnim = -1;
     private int exitAnim = -1;
 
-    public Object navigation(Context context) {
-//        Class target = client.getClientService(uriPath);
-//        Intent intent = new Intent(context, target);
-//        intent.putExtras(mBundle);
-//        context.startActivity(intent);
-        return true;
+
+    public Object navigation() {
+        return navigation(null, -1);
     }
 
-    public Object navigation(Activity context, int requestCode) {
-//        Class target = client.getClientService(uriPath);
-//        Intent intent = new Intent(context, target);
-//        intent.putExtras(mBundle);
-//        context.startActivityForResult(intent, requestCode);
-        return true;
+    public Object navigation(Context context) {
+        return navigation(context, -1);
+    }
+
+    public Object navigation(Context context, int requestCode) {
+        RouteMeta routeMeta = getRouteMeta(uriPath);
+        if (routeMeta != null) {
+            // 方式一： 子类判断
+//            if (Activity.class.isAssignableFrom(routeMeta.getDestination()) ){
+            // 方式二： 预先记录 Type 判断
+            if (routeMeta.getType() == RouteType.ACTIVITY) {
+                Intent intent = new Intent(context, routeMeta.getDestination());
+                intent.putExtras(mBundle);
+                if (requestCode != -1 && context instanceof Activity) {
+                    ((Activity) context).startActivityForResult(intent, requestCode);
+                } else {
+                    context.startActivity(intent);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private RouteMeta getRouteMeta(String uriPath) {
+        if (Warehouse.routes.containsKey(uriPath)) {
+            return Warehouse.routes.get(uriPath);
+        } else if (Warehouse.providersIndex.containsKey(uriPath)) {
+            return Warehouse.providersIndex.get(uriPath);
+        } else {
+            return null;
+        }
     }
 
     /**

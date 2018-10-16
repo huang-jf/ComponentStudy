@@ -3,6 +3,7 @@ package org.github.msg
 import javassist.CtClass
 
 class ServiceInfoBean {
+    
     String fullProcessName
     CtClass serviceClass
 

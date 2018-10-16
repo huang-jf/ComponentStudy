@@ -2,8 +2,7 @@ import com.hjf.apporlib.AppOrLibPlugin
 import com.hjf.router.RouterPlugin
 
 apply plugin: AppOrLibPlugin
-// TODO use plugin
-//apply plugin: RouterPlugin
+apply plugin: RouterPlugin
 
 
 android {
@@ -38,5 +37,6 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
     implementation project(':module_core')
+    implementation project(':module_test')
     annotationProcessor project(':out-lib:router-compiler')
 }
