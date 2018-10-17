@@ -4,7 +4,6 @@ package com.hjf.component.sample;
 import com.hjf.module.core.BaseApplication;
 import com.hjf.router.Warehouse;
 import com.hjf.router.facade.template.IRouteGroup;
-import com.hjf.router.routes.Router$$Root$$test;
 
 import java.util.Map;
 

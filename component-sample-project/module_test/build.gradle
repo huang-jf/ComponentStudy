@@ -1,5 +1,6 @@
 import com.hjf.apporlib.AppOrLibPlugin
 
+//apply plugin: 'com.android.application'
 apply plugin: AppOrLibPlugin
 
 android {
@@ -16,7 +17,7 @@ android {
 
         javaCompileOptions {
             annotationProcessorOptions {
-                arguments = [module_name: "test"]
+                arguments = [router_module_name: project.getName()]
             }
         }
     }

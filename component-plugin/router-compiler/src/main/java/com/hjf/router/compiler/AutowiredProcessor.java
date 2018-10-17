@@ -36,11 +36,39 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 import static javax.lang.model.element.Modifier.PUBLIC;
-
+/*
+ * $L: 直接使用 android.support.v4.app.ActivityCompat.startActivity()
+ * $T: 导入后再使用 import android.support.v4.app.ActivityCompat;  ActivityCompat.startActivity();
+ * $S: 字符串，对于丢如内容强制加上引用符号， "content"
+ */
+/*
+ * Element 介绍
+ *
+ * package com.example; // PackageElement
+ *
+ * public class Foo { // TypeElement private
+ *
+ *      int a; // VariableElement
+ *
+ *      private Foo other; // VariableElement
+ *
+ *      public Foo () {} // ExecuteableElement
+ *
+ *      public void setA ( // ExecuteableElement
+ *          int newA // TypeElement ) {
+ *      }
+ * }
+ */
+/* 自动生成 javax.annotation.processing.IProcessor 文件 */
 @AutoService(Processor.class)
+/* java版本支持 */
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
+/*
+ * 将指定注解 注册 到 此注解处理器 上
+ * 若没有注册注解或是注册的注解没被使用，不会生成Java文件
+ */
 @SupportedAnnotationTypes({
-        "com.hjf.routerlib.annotation.Autowired",
+        "com.hjf.router.facade.annotation.Autowired",
 })
 public class AutowiredProcessor extends AbstractProcessor {
     private static final String TAG = AutowiredProcessor.class.getSimpleName();
@@ -85,9 +113,11 @@ public class AutowiredProcessor extends AbstractProcessor {
             } catch (Exception e) {
                 logger.error(e);
             }
+            // 返回 true 之后不再分发此注解事件
             return true;
         }
 
+        // 返回 true 之后不再分发此注解事件
         return false;
     }
 
@@ -115,13 +145,6 @@ public class AutowiredProcessor extends AbstractProcessor {
                         .addAnnotation(Override.class)
                         .addModifiers(PUBLIC)
                         .addParameter(objectParamSpec);
-
-                //Build method: void preCondition(Bundle bundle);
-                MethodSpec.Builder preConditionMethodBuilder = MethodSpec.methodBuilder("preCondition")
-                        .addAnnotation(Override.class)
-                        .addModifiers(PUBLIC)
-                        .addException(ParamException)
-                        .addParameter(bundleParamSpec);
 
                 TypeElement parent = entry.getKey();
                 List<Element> children = entry.getValue();
@@ -178,23 +201,9 @@ public class AutowiredProcessor extends AbstractProcessor {
 
                         injectMethodBuilder.endControlFlow();
                     }
-
-                    //preCondition
-                    if (autowired.required()) {
-                        preConditionMethodBuilder.beginControlFlow("if (!bundle.containsKey(\"" + fieldName + "\"))");
-
-                        preConditionMethodBuilder.addStatement("throw new $T(" +
-                                "\"" + fieldName + "\")", ParamException);
-
-                        preConditionMethodBuilder.endControlFlow();
-                    }
                 }
 
                 helper.addMethod(injectMethodBuilder.build());
-
-
-                ////////////////
-                helper.addMethod(preConditionMethodBuilder.build());
 
 
                 // Generate autowire helper

@@ -1,9 +1,11 @@
 package com.hjf.router.router;
 
-import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
+
+import com.hjf.router.facade.service.AutowiredService;
 
 /**
  * 为了进一步了解ARouter源码
@@ -42,4 +44,14 @@ public class Router {
         }
         return null;
     }
+    /**
+     * Inject params and services.
+     */
+    public void inject(Object thiz) {
+        AutowiredService autowiredService = ((AutowiredService) build("/router/service/autowired").navigation());
+        if (null != autowiredService) {
+            autowiredService.autowire(thiz);
+        }
+    }
+
 }

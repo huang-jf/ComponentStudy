@@ -6,7 +6,7 @@ public interface Constants {
     ///////////////////////////////////////////////////////////////////////////
     // Options of processor
     ///////////////////////////////////////////////////////////////////////////
-    String OPTION_MODULE_NAME = "module_name";
+    String OPTION_MODULE_NAME = "router_module_name";
 
     // System interface
     String ACTIVITY = "android.app.Activity";
@@ -19,6 +19,7 @@ public interface Constants {
     String ROUTE_TYPE = "com.hjf.router.facade.enums.RouteType";
     String ROUTE_ROOT = "com.hjf.router.facade.template.IRouteRoot";
     String ROUTE_GROUP = "com.hjf.router.facade.template.IRouteGroup";
+    String ROUTE_PROVIDER = "com.hjf.router.facade.template.IProvider";
     String ROUTE_SYRINGE = "com.hjf.router.facade.template.ISyringe";
 
 

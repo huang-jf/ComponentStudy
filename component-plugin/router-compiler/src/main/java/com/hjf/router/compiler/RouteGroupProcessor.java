@@ -137,10 +137,26 @@ public class RouteGroupProcessor extends AbstractProcessor {
                         route.path(),
                         route.group());
             }
-            // Fragment 派生类 TODO
+            // Fragment 派生类
             else if (typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.FRAGMENT).asType())
                     || typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.FRAGMENT_V4).asType())) {
-                logger.info("current element is Fragment ");
+                methodBuilder.addStatement("atlas.put($S, $T.build($T.FRAGMENT, $T.class, $S, $S, null, -1, -1))",
+                        route.path(),
+                        ClassName.get(elementUtil.getTypeElement(Constants.ROUTE_META)),
+                        ClassName.get(elementUtil.getTypeElement(Constants.ROUTE_TYPE)),
+                        element,
+                        route.path(),
+                        route.group());
+            }
+            // IProvider 派生类
+            else if (typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.ROUTE_PROVIDER).asType())){
+                methodBuilder.addStatement("atlas.put($S, $T.build($T.PROVIDER, $T.class, $S, $S, null, -1, -1))",
+                        route.path(),
+                        ClassName.get(elementUtil.getTypeElement(Constants.ROUTE_META)),
+                        ClassName.get(elementUtil.getTypeElement(Constants.ROUTE_TYPE)),
+                        element,
+                        route.path(),
+                        route.group());
             }
             // other not support type
             else {

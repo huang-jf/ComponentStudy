@@ -1,25 +1,33 @@
 package com.hjf.router.facade.template;
 
-import android.app.Application;
-import android.content.Context;
-
 import java.util.Map;
 
 /**
  * Root element.
- * 1. apt 会在各组件生成 Router$$Root$$ModuleName 类，实现 {@link IRouteRoot} 接口的类
- * 2. 在编译期借助 gradle 插件读取或有实现 {@link IRouteRoot} 接口的类，即 APT 自动生成的 Router$$Root$$ModuleName
- * 3. 遍历所有实现类，在 {@link Application#onCreate()} 代码块中插入 {@link IRouteRoot#loadInto(Map)} 方法的调用代码。
- * .   此方法具体实现看compiler包，主要工作是：
- * .   将当前模块 APT 自动生成的 Router$$Group$$ModuleName 实现 {@link IRouteGroup} 的类
- * .   放入 map 中 {@link com.hjf.router.Warehouse#groupsIndex} 中存储
- * <p>
- * <p>
- * 注： 下一步操作是 实例化 Router$$Group$$ModuleName 对象并调用其方法，相关本类的操作到此结束。
- * <p>
- * 注： 上述流程为简便已RootGroup为例，同理： ARouter 中 IProvider、IInterceptor 都此添加逻辑
- * .    在 IRouteRoot 实现类的方法中，将自动生成的 IProvider、IInterceptor 实现类放入
- * .    仓库类 {@link com.hjf.router.Warehouse} 对应的 map 静态对象中
+ * 1. apt 会在各组件生成 Router$$Root$$ModuleName 类，实现接口 {@link IRouteRoot}
+ * .    将 APT 自动生成的 Router$$Group$$ModuleName 类存放入仓库对象
+ * .    {@link com.hjf.router.Warehouse#groupsIndex} 中
+ * .    key值是 APT 获取模块的 build.gradle 中申明的类似 ModuleName 的字段
+ * 2.3 初始化导入方式一: gradle 插件字节码插入 - LogisticsCenter
+ * .    ARouter的做法，在 LogisticsCenter.loadRouterMap() 中插入代码：
+ * .        registerRouteRoot(new Router$$Root$$ModuleName());
+ * .    在调用 ARouter.init() 后，最调用方法 LogisticsCenter.loadRouterMap()
+ * .    注：在改方法内将字段赋值： registerByPlugin = true，这样就不会使用方式二去初始化
+ * 2.2 初始化导入方式二: 读取Dex包
+ * .    从 dex 包中读取所有文件名，筛选符合条件的文件名
+ * .    使用 {@link Class} 工具实例化对象并调用导入方法
+ * .    因为涉及文件读取等耗时操作，文件数过多，dex包过多，会拖慢App启动时间，建议用方式一
+ * 2.3 初始化导入方式三: gradle 插件字节码插入 - Application
+ * .    注： 没有全部采用 ARouter 的所有代码，主要目的是验证功能是否正常实现
+ * .    gradle 插件在编译期扫描所有的 class 文件
+ * .    找到项目 application 文件
+ * .    找到所有的 Router$$Root$$ModuleName 类
+ * .    在 application.onCreate() 方法中遍历插入类似： Router$$Root$$ModuleName.loadInto(map) 的方法调用代码
+ * 3. {@link IRouteRoot} 多这一层的意义
+ * .    技术上可以直接在 gradle 编译期插入 {@link IRouteGroup#loadInto(Map)} 导入代码
+ * .    对一层 IRouteRoot 是实现了模块资源使用时加载功能
+ * .    在编译期借助 Router$$Root$$ModuleName 实现类存入收集所有的 {@link IRouteGroup} 实现类
+ * .    key 值是 ModuleName，可以在使用指定木块时加载模块配置到缓存中
  */
 public interface IRouteRoot {
 

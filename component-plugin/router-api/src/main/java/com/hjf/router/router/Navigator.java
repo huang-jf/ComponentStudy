@@ -3,7 +3,6 @@ package com.hjf.router.router;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
@@ -14,6 +13,7 @@ import android.util.SparseArray;
 import com.hjf.router.Warehouse;
 import com.hjf.router.facade.enums.RouteType;
 import com.hjf.router.facade.model.RouteMeta;
+import com.hjf.router.facade.template.IProvider;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -38,14 +38,17 @@ public final class Navigator {
     private int exitAnim = -1;
 
 
+    @Nullable
     public Object navigation() {
         return navigation(null, -1);
     }
 
+    @Nullable
     public Object navigation(Context context) {
         return navigation(context, -1);
     }
 
+    @Nullable
     public Object navigation(Context context, int requestCode) {
         RouteMeta routeMeta = getRouteMeta(uriPath);
         if (routeMeta != null) {
@@ -62,8 +65,23 @@ public final class Navigator {
                 }
                 return true;
             }
+            else if (routeMeta.getType() == RouteType.PROVIDER){
+                Class<? extends IProvider> providerMeta = (Class<? extends IProvider>) routeMeta.getDestination();
+                IProvider instance = Warehouse.providers.get(providerMeta);
+                if (null == instance) { // There's no instance of this provider
+                    IProvider provider;
+                    try {
+                        provider = providerMeta.getConstructor().newInstance();
+                        provider.init(context);
+                        Warehouse.providers.put(providerMeta, provider);
+                        return provider;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Init provider failed! " + e.getMessage());
+                    }
+                }
+            }
         }
-        return false;
+        return null;
     }
 
     private RouteMeta getRouteMeta(String uriPath) {

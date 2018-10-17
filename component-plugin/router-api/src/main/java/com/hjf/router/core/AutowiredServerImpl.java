@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * ServiceImpl  for autowired.
+ * 实现运作流程: {@link com.hjf.router.facade.template.ISyringe}
+ */
 @Route(path = "/router/service/autowired")
 public class AutowiredServerImpl implements AutowiredService {
 
@@ -25,7 +29,7 @@ public class AutowiredServerImpl implements AutowiredService {
     }
 
     @Override
-    public void autowire(Object instance) {
+        public void autowire(Object instance) {
         String className = instance.getClass().getName();
         try {
             if (!blackList.contains(className)) {

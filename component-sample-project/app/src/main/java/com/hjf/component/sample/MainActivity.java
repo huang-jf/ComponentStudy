@@ -16,7 +16,9 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.tv_click).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Router.getInstance().build("/test/main").navigation(MainActivity.this);
+                Router.getInstance().build("/test/main")
+                        .withInt("intabc", 15)
+                        .navigation(MainActivity.this);
             }
         });
     }
