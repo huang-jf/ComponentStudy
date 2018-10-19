@@ -1,8 +1,10 @@
+import com.hjf.plugin.AspectjPlugin
+
 apply plugin: 'com.android.library'
+apply plugin: AspectjPlugin
 
 android {
     compileSdkVersion 26
-
 
 
     defaultConfig {

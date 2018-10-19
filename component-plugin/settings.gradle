@@ -1,1 +1,3 @@
-include  ':plugin-AppOrLib', ':plugin-router'
+include ':plugin-AppOrLib',
+        ':plugin-router',
+        ':plugin-AspectJ'

@@ -157,7 +157,9 @@ public class RouteRootProcessor extends AbstractProcessor {
         } catch (IOException e) {
             return false;
         }
+
+        // RouteGroupProcessor 会用到此事件，但比本进程之前使用，可以返回true
         // 返回 true 之后不再分发此注解事件
-        return false;
+        return true;
     }
 }

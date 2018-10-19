@@ -2,6 +2,7 @@ package com.hjf.router.compiler;
 
 import com.google.auto.service.AutoService;
 import com.hjf.router.compiler.util.Constants;
+import com.hjf.router.compiler.util.FileUtils;
 import com.hjf.router.compiler.util.Logger;
 import com.hjf.router.facade.annotation.Route;
 import com.hjf.router.utils.RouterJavaFilePathUtil;
@@ -114,12 +115,13 @@ public class RouteGroupProcessor extends AbstractProcessor {
                 .addParameter(ParameterSpec.builder(mapTypeName, "atlas").build());
 
 
-        // 1. @Route -> Activity
+        // 1. @Route -> Activity、Fragment、IProvider ...
         Set<? extends Element> routeElements = roundEnvironment.getElementsAnnotatedWith(Route.class);
         if (routeElements == null) {
             logger.info("found route element annotation num is null");
             return true;
         }
+
         logger.info("found route element annotation num is : " + routeElements.size());
         for (Element element : routeElements) {
             Route route = element.getAnnotation(Route.class);
@@ -149,7 +151,7 @@ public class RouteGroupProcessor extends AbstractProcessor {
                         route.group());
             }
             // IProvider 派生类
-            else if (typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.ROUTE_PROVIDER).asType())){
+            else if (typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.ROUTE_PROVIDER).asType())) {
                 methodBuilder.addStatement("atlas.put($S, $T.build($T.PROVIDER, $T.class, $S, $S, null, -1, -1))",
                         route.path(),
                         ClassName.get(elementUtil.getTypeElement(Constants.ROUTE_META)),
@@ -164,7 +166,6 @@ public class RouteGroupProcessor extends AbstractProcessor {
                         " to used annotation Route");
             }
         }
-
 
         // 3. build class
         String implClassPath = RouterJavaFilePathUtil.getRouterGroupImplClassPath(moduleName);
@@ -186,7 +187,55 @@ public class RouteGroupProcessor extends AbstractProcessor {
         } catch (IOException e) {
             return false;
         }
+
+        // 写出路由表
+        generateRouterTable(routeElements);
+
+        // RouteRootProcessor 需要用到此事件，不能返回true
         // 返回 true 之后不再分发此注解事件
         return false;
+    }
+
+
+    /**
+     * generate HostRouterTable.txt
+     */
+    private void generateRouterTable(Set<? extends Element> routeElements) {
+        String fileName = RouterJavaFilePathUtil.genRouterTableFilePath(moduleName);
+        if (FileUtils.createFile(fileName)) {
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("auto generated, do not change !!!! \n\n")
+                    .append("Module --> ").append(moduleName).append("\n\n");
+            for (Element element : routeElements) {
+                Route route = element.getAnnotation(Route.class);
+                // class name[ClassType]
+                // Activity 派生类
+                if (typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.ACTIVITY).asType())) {
+                    stringBuilder.append(element.getSimpleName()).append(" [ACTIVITY]").append("\n");
+                }
+                // Fragment 派生类
+                else if (typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.FRAGMENT).asType())
+                        || typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.FRAGMENT_V4).asType())) {
+                    stringBuilder.append(element.getSimpleName()).append(" [Fragment]").append("\n");
+                }
+                // IProvider 派生类
+                else if (typeUtil.isSubtype(element.asType(), elementUtil.getTypeElement(Constants.ROUTE_PROVIDER).asType())) {
+                    stringBuilder.append(element.getSimpleName()).append(" [IProvider]").append("\n");
+                }
+                else {
+//                    stringBuilder.append(element.getSimpleName()).append(" [Unknown]").append("\n");
+                }
+                stringBuilder
+                        // path
+                        .append("\t").append("path:\t").append(route.path()).append("\n")
+                        // name
+                        .append("\t").append("name:\t").append(route.name()).append("\n")
+                        // todo param
+//                        .append("\t").append("param:\t").append(route.name()).append("\n")
+                        .append("\n");
+            }
+            FileUtils.writeStringToFile(fileName, stringBuilder.toString(), false);
+        }
     }
 }

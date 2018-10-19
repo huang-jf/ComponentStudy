@@ -1,8 +1,10 @@
-import com.hjf.apporlib.AppOrLibPlugin
-import com.hjf.router.RouterPlugin
+import com.hjf.plugin.AppOrLibPlugin
+import com.hjf.plugin.RouterPlugin
+import com.hjf.plugin.AspectjPlugin
 
 apply plugin: AppOrLibPlugin
 apply plugin: RouterPlugin
+apply plugin: AspectjPlugin
 
 
 android {

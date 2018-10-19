@@ -1,8 +1,8 @@
 # ComponentStudy
 
-通过解剖分析[ARouter](https://github.com/alibaba/ARouter)源码，仿照编写代码，加深熟悉逻辑。
+通过解剖分析[ARouter](https://github.com/alibaba/ARouter)源码，仿照编写代码，深入了解实现逻辑。
 
-一下内容记录此项目仿照[ARouter](https://github.com/alibaba/ARouter)源码的实现思路和设计，便于日后复习和快速掌握。
+
 
 ## 实现功能
 
@@ -12,11 +12,6 @@
 - 代码隔离，面向接口开发，隐藏实现类
 
 
-
-## 项目结构 TODO
-
-- `com.hjf.router` 项目其实包名路径
-  - `core`
 
 ## 项目功能接口、类
 
@@ -30,18 +25,7 @@ ARouter可以实现根据Uri获取各Fragment或其他的对象。
 
 #### Warehouse
 
-用来存放各中Route元素的仓库。使用静态Map对象存放。
-
-
-
-```
-* 2.3 
-* .    
-* .    
-* .    
-* .    
-* .     
-```
+用来存放各中Route元素的仓库。使用静态Map对象存放。     
 
 #### IRouteRoot
 
@@ -116,7 +100,7 @@ ARouter可以实现根据Uri获取各Fragment或其他的对象。
     - 判断 `{@link RouteMeta#type}` 为 Provider 时实例化对象并返回对象
 - 初始化导入方式: 参考 **IRouteRoot**： 2. 初始化导入方式一、二、三
 
-### 参数传递的实现思路
+## 参数传递的实现思路
 
 在 ARouter 框架的设计实现中的相关关系：
 
@@ -135,12 +119,16 @@ ARouter可以实现根据Uri获取各Fragment或其他的对象。
 `Router.getInstance().inject(activity);`进行字段自动填充，跟踪代码流程：
 
 1. 利用 `ARoute` 获取了 `AutowiredService` 实现类 `AutowiredServerImpl` 的对象：**autoServer**
+
 2. 调用 `autoServer.autowire(activity)` 进入 `AutowiredServerImpl.autowire(activity)` 实现代码
+
 3. 根据 activity class name 获取取得 对应的  `ISyringe` 实现类
+
 4. 初始化获取 `ISyringe` 对象，即对应的 `ClassSimpleName$$Router$$Autowired`  实现类对象： `iSyringe`
+
 5. `iSyringe.inject(activity)` 进入 APT 生成的取值、赋值代码块
 
-
+   
 
 #### ISyringe
 
@@ -154,3 +142,17 @@ ARouter可以实现根据Uri获取各Fragment或其他的对象。
 
 
 上述均已 Activity 为例，Fragment等思路相同，具体实现代码需要做些处理。
+
+
+
+## 组件化中使用AOP功能
+
+- 需要在编译的模块使用`AspectjPlugin`插件
+- 在主体项目中也要使用此`AspectjPlugin`插件
+
+### AspectjPlugin 插件
+
+- 集成了 `Aspectj` `gradle` 配置代码
+- 自动区分当前模块种类，使用不同的`Aspectj`配置方式
+  - `com.android.application`
+  - `com.android.library`

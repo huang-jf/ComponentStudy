@@ -1,7 +1,8 @@
-import com.hjf.apporlib.AppOrLibPlugin
+import com.hjf.plugin.AppOrLibPlugin
+import com.hjf.plugin.AspectjPlugin
 
-//apply plugin: 'com.android.application'
 apply plugin: AppOrLibPlugin
+apply plugin: AspectjPlugin
 
 android {
     compileSdkVersion 26
