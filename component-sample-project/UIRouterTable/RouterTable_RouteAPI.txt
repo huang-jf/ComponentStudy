@@ -1,0 +1,8 @@
+auto generated, do not change !!!! 
+
+Module --> RouteAPI
+
+AutowiredServerImpl [IProvider]
+	path:	/router/service/autowired
+	name:	
+

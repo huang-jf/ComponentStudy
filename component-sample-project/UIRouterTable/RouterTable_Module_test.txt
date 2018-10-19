@@ -1,0 +1,8 @@
+auto generated, do not change !!!! 
+
+Module --> module_test
+
+ModuleTestMainActivity [ACTIVITY]
+	path:	/test/main
+	name:	
+
