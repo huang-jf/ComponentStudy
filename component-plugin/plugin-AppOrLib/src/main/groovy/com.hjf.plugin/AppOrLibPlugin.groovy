@@ -1,6 +1,8 @@
 package com.hjf.plugin
 
-
+import com.android.build.gradle.tasks.MergeManifests
+import com.hjf.plugin.copy_from_manifesteditor.ManifestParser
+import com.hjf.plugin.util.AppOrLibExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -8,22 +10,37 @@ import java.util.regex.Pattern
 
 class AppOrLibPlugin implements Plugin<Project> {
 
+    // 删除 application 冲突属性
+    private static String[] UPDATE_MANIFEST_NODE_TASK_INFO_1 = [
+            "application",
+            "android:name=del&android:icon=del&android:label=del&android:roundIcon=del&android:theme=del"]
+    // 删除 activity 默认启动配置：category、action 两个要留一个，空的 intent-filter 会报错
+    private
+    static String[] UPDATE_MANIFEST_NODE_TASK_INFO_2 = [
+            "application/activity/intent-filter/category?android:name=android.intent.category.LAUNCHER&parent=1",
+            "child:category=del"]
+
+    private AppOrLibExtension appOrLibExtension
+
     @Override
     void apply(Project project) {
 
-        // 1. 获取当前编译module
+        // 1. 插件获取当前模块的 build.gradle 中获取参数
+        appOrLibExtension = project.extensions.create("apporlib", AppOrLibExtension)
+
+        // 2. 获取当前编译module
         String currCompileModuleName = project.getPath().replace(":", "")
         System.out.println("1. currCompileModuleName ->  " + currCompileModuleName)
         System.out.println("1. project.getPath() ->  " + project.getPath())
 
-        // 2. 从工程根目录的 gradle.properties 文件中获取字段 main_module_name
+        // 3. 从工程根目录的 gradle.properties 文件中获取字段 main_module_name
         if (!project.rootProject.hasProperty("main_module_name")) {
             throw new RuntimeException("you should set main_module_name in " + module + "'s gradle.properties")
         }
         String mainModuleName = project.rootProject.property("main_module_name")
         System.out.println("2. mainModuleName ->  " + mainModuleName)
 
-        // 3. 获取编译的 TargetCompileModuleName
+        // 4. 获取编译的 TargetCompileModuleName
         // 如果是命令行使用 ./gradlew compileDebug 等进行编译，TargetCompileModuleName = null
         String targetCompileModuleName = getTargetCompileModuleName(project)
         if (targetCompileModuleName == null) {
@@ -32,7 +49,7 @@ class AppOrLibPlugin implements Plugin<Project> {
         }
         System.out.println("3. targetCompileModuleName ->  " + targetCompileModuleName)
 
-        // 4. 判断当前module应用插件：application、library
+        // 5. 判断当前module应用插件：application、library
         boolean isApplyPluginApplication = true
         if (targetCompileModuleName != null
                 && !currCompileModuleName.equals(mainModuleName)
@@ -41,67 +58,79 @@ class AppOrLibPlugin implements Plugin<Project> {
         }
         System.out.println("4. isApplyPluginApplication ->  " + isApplyPluginApplication)
 
-        // 5.1 application
+        // 选择使用插件
+        // 6.1 application
         // 根据配置添加各种组件依赖，并且自动化生成组件加载代码
         if (isApplyPluginApplication) {
             System.out.println("apply plugin is " + 'com.android.application')
             project.apply plugin: 'com.android.application'
-
-            // 更改 manifest 位置
-            String manifestsSrcFileAsApplication = project.properties.get("manifestsSrcFileAsApplication")
-            System.out.println("manifestsSrcFileAsApplication --> " + manifestsSrcFileAsApplication)
-            if (manifestsSrcFileAsApplication != null) {
-                project.android.sourceSets {
-                    main {
-                        manifest.srcFile 'src/main/asapp/AndroidManifest.xml'
-                    }
-                }
-            }
-
-            // 编译时期: 自动添加引用
-            if (isCompileTask(project)) {
-                String compileLibs = (String) project.properties.get("compileLibs")
-                System.out.println("compileLibs --> " + compileLibs)
-                if (null != compileLibs) {
-                    String[] compileLibArray = compileLibs.split(",")
-                    for (String libName : compileLibArray) {
-                        libName = libName.trim()
-                        if (libName.startsWith(":")) {
-                            libName = libName.substring(1)
-                        }
-                        // maven 座标导入: api 'com.android.support:appcompat-v7:26.1.0'
-                        if (isMavenArtifact(libName)) {
-                            System.out.println("add dependencies lib  : " + libName)
-                            project.dependencies.add("api", libName)
-                        }
-                        // 本地项目导入: api project(':module_XXX')
-                        else {
-                            System.out.println("add dependencies lib : " + libName)
-                            project.dependencies.add("api", project.project(':' + libName))
-                        }
-                    }
-                }
-            }
         }
-        // 5.2 library
+        // 6.2 library
         // 排除不要的java代码等操作
+        // 移除 manifest 节点 application 无需元素，如：name，或是 默认启动Activity
         else {
             System.out.println("apply plugin is " + 'com.android.library')
             project.apply plugin: 'com.android.library'
-            // java file 排除设置 FIXME 目前无效
-            // runalone/**,runalone2/xx.java
-            String excludeJavaFiles = (String) project.properties.get("excludeJavaFilePathsAsLibrary")
-            System.out.println("excludeJavaFiles --> " + excludeJavaFiles)
-            /*if (excludeJavaFiles != null) {
-                String[] excludeJavaFileArray = compileLibs.split(",")
-                project.android.sourceSets {
-                    main {
-                        java {
-                            exclude excludeJavaFileArray
-                        }
+        }
+
+        // 7. 获取 build.gradle 自定义参数只有在此方法块中才能使用
+        project.afterEvaluate {
+
+            // 6.1 编译时期: 自动添加引用
+            if (isCompileTask(project)) {
+                appOrLibExtension.compileLibs.each { libName ->
+                    libName = libName.trim()
+                    if (libName.startsWith(":")) {
+                        libName = libName.substring(1)
+                    }
+                    // maven 座标导入: api 'com.android.support:appcompat-v7:26.1.0'
+                    if (isMavenArtifact(libName)) {
+                        System.out.println("add dependencies lib  : " + libName)
+                        project.dependencies.add("api", libName)
+                    }
+                    // 本地项目导入: api project(':module_XXX')
+                    else {
+                        System.out.println("add dependencies lib : " + libName)
+                        project.dependencies.add("api", project.project(':' + libName))
                     }
                 }
-            }*/
+            }
+            // 6.2 添加引用后
+            if (isApplyPluginApplication) {
+                delManifestNode(project)
+            }
+        }
+    }
+
+    /**
+     * 删除所有依赖包的 manifest 冲突标签属性，比如：
+     * -    application->android:name ...
+     * -    Activity-> 默认启动标签：LAUNCHER
+     */
+    private static void delManifestNode(Project project) {
+        project.android.applicationVariants.all { variant ->
+            variant.outputs.each { output ->
+                // 在本 Module 的 Manifest 合并之前，检查所有依赖包的 Manifest 文件，进行需要的动作
+                MergeManifests processManifestTask = output.processManifest
+                processManifestTask.doFirst {
+                    def manifestFiles = processManifestTask.manifests.files
+                    for (manifestFile in manifestFiles) {
+                        System.out.println("Edit File  --  ${manifestFile.getAbsolutePath()} Start.")
+
+                        ManifestParser manifestParser = new ManifestParser(manifestFile)
+                        manifestParser.editNode(UPDATE_MANIFEST_NODE_TASK_INFO_1[0], UPDATE_MANIFEST_NODE_TASK_INFO_1[1])
+                        manifestParser.editNode(UPDATE_MANIFEST_NODE_TASK_INFO_2[0], UPDATE_MANIFEST_NODE_TASK_INFO_2[1])
+                        manifestParser.save()
+
+                        System.out.println("Edit File  --  ${manifestFile.getAbsolutePath()}  OK.")
+                    }
+                }
+
+                // 在AS合并 manifest 之后修改 manifest 的内容，保证不被AS重新覆写
+                output.processManifest.doLast {
+                    // nothing ...
+                }
+            }
         }
     }
 
@@ -116,7 +145,7 @@ class AppOrLibPlugin implements Plugin<Project> {
     }
     /**
      * 获取目标编译组件的名字，规则如下：
-     * 默认是app，直接运行assembleRelease的时候，等同于运行app:assembleRelease
+     * 默认是app，直接运行assembleRelease的时候，等同于运行 app:assembleRelease
      *
      * assembleRelease ---app
      * app:assembleRelease :app:assembleRelease ---app
@@ -163,58 +192,4 @@ class AppOrLibPlugin implements Plugin<Project> {
         }
         return false
     }
-
-    /**
-     * 自动添加依赖，只在运行assemble任务的才会添加依赖，因此在开发期间组件之间是完全感知不到的，这是做到完全隔离的关键
-     * 支持两种语法：module或者groupId:artifactId:version(@aar),前者之间引用module工程，后者使用maven中已经发布的aar
-     * @param assembleTask
-     * @param project
-     */
-    /*private void compileComponents(AssembleTask assembleTask, Project project) {
-        // 1. 获取当前模块的 gradle.properties 文件申明的 debugComponent、compileComponent 字段
-        String components
-        if (assembleTask.isDebug) {
-            components = (String) project.properties.get("debugComponent")
-        } else {
-            components = (String) project.properties.get("compileComponent")
-        }
-
-        if (components == null || components.length() == 0) {
-            System.out.println("there is no add dependencies ")
-            return
-        }
-
-        // 2. 解析成依赖模块数组
-        String[] compileComponents = components.split(",")
-        if (compileComponents == null || compileComponents.length == 0) {
-            System.out.println("there is no add dependencies ")
-            return
-        }
-
-        // 3. 循环导入
-        for (String str : compileComponents) {
-            System.out.println("comp is " + str)
-            str = str.trim()
-            if (str.startsWith(":")) {
-                str = str.substring(1)
-            }
-            // 是否是maven 坐标
-            if (StringUtil.isMavenArtifact(str)) {
-                *//**
-     * 示例语法:groupId:artifactId:version(@aar)
-     * compileComponent=com.luojilab.reader:readercomponent:1.0.0
-     * 注意，前提是已经将组件aar文件发布到maven上，并配置了相应的repositories
-     *//*
-                project.dependencies.add("api", str)
-                System.out.println("add dependencies lib  : " + str)
-            } else {
-                *//**
-     * 示例语法:module
-     * compileComponent=readercomponent,sharecomponent
-     *//*
-                project.dependencies.add("api", project.project(':' + str))
-                System.out.println("add dependencies project : " + str)
-            }
-        }
-    }*/
 }

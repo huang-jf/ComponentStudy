@@ -156,3 +156,20 @@ ARouter可以实现根据Uri获取各Fragment或其他的对象。
 - 自动区分当前模块种类，使用不同的`Aspectj`配置方式
   - `com.android.application`
   - `com.android.library`
+
+### AppOrLib 插件
+
+- 自动判断当前模块应用插件
+  - `com.android.application`   默认
+  - `com.android.library`
+- 修改识别为`library`模块的Manifest
+  - 去掉`application`节点中的冲突属性
+  - 去掉默认启动的`activity`的意图
+  - `manifest`修改不影响源码文件
+
+### ManifestEditor 插件
+
+- 提供修改`Manifest`文件的能力
+  - 新增、删除、更新标签属性值
+  - 删除子节点
+  - 改动不影响源码文件，作用与编译生成的`APK`或`ARR`文件

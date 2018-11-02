@@ -2,7 +2,9 @@ import com.hjf.plugin.AppOrLibPlugin
 import com.hjf.plugin.RouterPlugin
 import com.hjf.plugin.AspectjPlugin
 
+// TODO AppOrLibPlugin 删除 manifest 指定属性
 apply plugin: AppOrLibPlugin
+//apply plugin: 'com.android.application'
 apply plugin: RouterPlugin
 apply plugin: AspectjPlugin
 
@@ -40,4 +42,11 @@ dependencies {
 
     implementation project(':module_core')
     annotationProcessor project(':out-lib:router-compiler')
+}
+
+// 插件 AppOrLibPlugin 属性
+apporlib {
+    compileLibs = [
+            'module_test',
+    ]
 }

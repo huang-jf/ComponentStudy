@@ -28,6 +28,7 @@ public class AspectjPlugin implements Plugin<Project> {
 
         // 使用此插件的模块是： android.application
         // 使用 project.android.applicationVariants 字段
+//        if (project.getPlugins().hasPlugin(com.android.build.gradle.AppPlugin.class)){
         if (project.getPluginManager().hasPlugin("com.android.application")){
             project.android.applicationVariants.all { variant ->
                 configAspectj(variant.javaCompile, project.logger)
@@ -35,6 +36,7 @@ public class AspectjPlugin implements Plugin<Project> {
         }
         // 使用此插件的模块是： android.library
         // 使用 project.android.libraryVariants 字段
+//        else if (project.getPlugins().hasPlugin(com.android.build.gradle.LibraryPlugin.class)){
         else if (project.getPluginManager().hasPlugin("com.android.library")){
             project.android.libraryVariants.all { variant ->
                 configAspectj(variant.javaCompile, project.logger)

@@ -23,6 +23,8 @@ public class MyApp extends BaseApplication {
      * 注册RoteGroup、IProvider 的是 RouteRoot，借助Gradle编译时期字节码插入
      *
      * 加载注册的所有 Route Group 对象
+     *
+     * ARouter 的代码添加在 LogisticsCenter.loadRouterMap() 方法中
      */
     private void initLoadRouteGroup() {
         // java 代码
