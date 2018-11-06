@@ -15,7 +15,7 @@ import org.gradle.api.file.FileCollection
  */
 class ManifestEditorPlugin implements Plugin<Project> {
 
-
+    private boolean enabledEdit = false
     private ManifestEditExtension editExtension
     public HashMap<String, Namespace> xmlNameSpaceMap = new HashMap<>()
 
@@ -25,11 +25,16 @@ class ManifestEditorPlugin implements Plugin<Project> {
 
         project.afterEvaluate {
             // 需要在 project.afterEvaluate 中才能获取到
-            System.out.println("create ManifestEditExtension enabled: ${project.manifestEdit.enabled}")
+            System.out.println("create ManifestEditExtension enabled: ${editExtension.enableWithPluginIds}")
             System.out.println("create ManifestEditExtension editNodes: ${editExtension.editNodes}")
 
-            // 不进行 manifest 修改操作
-            if (!project.manifestEdit.enabled) {
+            // 遍历插件名，有一个符合条件的开启修改功能
+            editExtension.enableWithPluginIds.each { pluginId ->
+                if (project.getPluginManager().hasPlugin(pluginId)) {
+                    enabledEdit = true
+                }
+            }
+            if (!enabledEdit) {
                 System.out.println("ManifestEditor Plugin enabled=false，不处理")
                 return
             }

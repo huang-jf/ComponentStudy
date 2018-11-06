@@ -6,9 +6,9 @@ class ManifestEditExtension {
     public static final String EditInfoHint = "[application/activity?android:name=.ModuleAMainActivity&android:label=aaaaaaaa,android:label=del&android:taskAffinity=123]";
 
     /**
-     * 是否启用
+     * 包含以下插件的，开启manifest修改功能
      */
-    boolean enabled
+    Iterable<List<String>> enableWithPluginIds
 
     /**
      * 编辑节点信息，数组集合，长度为2

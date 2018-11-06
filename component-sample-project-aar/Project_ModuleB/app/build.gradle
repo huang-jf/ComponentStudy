@@ -1,13 +1,13 @@
+import com.hjf.plugin.ManifestEditorPlugin
 
-
-apply plugin: 'com.android.application'
-apply plugin: 'com.alibaba.arouter'
-
+//apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
+apply plugin: ManifestEditorPlugin
 
 android {
     compileSdkVersion 27
     defaultConfig {
-        applicationId "com.hjf.sample"
+//        applicationId "com.cy_life.project_module_b"
         minSdkVersion 19
         targetSdkVersion 27
         versionCode 1
@@ -16,7 +16,7 @@ android {
         // ARouter Module Name argument setting
         javaCompileOptions {
             annotationProcessorOptions {
-                arguments = [AROUTER_MODULE_NAME: project.getName()]
+                arguments = [AROUTER_MODULE_NAME: 'moduleB']
             }
         }
     }
@@ -24,11 +24,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-    sourceSets {
-        main {
-            jniLibs.srcDirs = ['libs']
         }
     }
 }
@@ -41,8 +36,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
-    implementation(name: 'module_a', ext: 'aar')
-    implementation(name: 'module_b', ext: 'aar')
+
     // ARouter
     api ('com.alibaba:arouter-api:1.4.0'){
         exclude group:'com.android.support'
@@ -51,9 +45,17 @@ dependencies {
     annotationProcessor 'com.alibaba:arouter-compiler:1.2.1'
 }
 
-// 导入 arr
-repositories {
-    flatDir {
-        dirs 'libs'
-    }
+manifestEdit {
+    enableWithPluginIds = ["com.android.library"]
+    editNodes = [
+            // 删除 application 中的icon等申明
+            ["application", "android:icon=del&android:label=del&android:roundIcon=del&android:theme=del"],
+            // activity 编辑，删除默认启动配置
+            ["application/activity?android:name=.MainActivity",
+             "android:label=manifesteditor&android:taskAffinity=del&child:intent-filter=del"],
+            // activity 删除默认启动属性，不能留下空的 <intent-filter/> 标签，要么添加label之类的属性，要么整个删除
+            // 在上条语句中整个删除
+//            ["application/activity/intent-filter/category?android:name=android.intent.category.LAUNCHER&parent=1",
+//             "child:category=del&child:action=del"],
+    ]
 }
